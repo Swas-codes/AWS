@@ -37,15 +37,18 @@ def validate_callback_secret(authorization: Optional[str]) -> None:
 
     Raises HTTPException 401 if the token is missing or invalid.
     """
+    logger.info("Received callback Authorization header: %r", authorization)
     if not authorization:
         raise HTTPException(status_code=401, detail="Missing authorization header")
 
     parts = authorization.split(" ", 1)
     if len(parts) != 2 or parts[0].lower() != "bearer":
-        raise HTTPException(status_code=401, detail="Invalid authorization format")
+        logger.warning("Invalid authorization header parts: %r", parts)
+        raise HTTPException(status_code=401, detail=f"Invalid authorization format: received {authorization!r}")
 
     if parts[1] != settings.N8N_CALLBACK_SECRET:
         raise HTTPException(status_code=401, detail="Invalid callback secret")
+
 
 
 def is_event_processed(event_id: str) -> bool:

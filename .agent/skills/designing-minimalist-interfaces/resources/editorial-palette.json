@@ -1,0 +1,27 @@
+{
+  "canvas": {
+    "light": "#FBFBFA",
+    "light_bone": "#F7F6F3",
+    "dark": "#111111",
+    "dark_surface": "#18181B"
+  },
+  "typography": {
+    "body_light": "#18181B",
+    "secondary_light": "#71717A",
+    "muted_light": "#A1A1AA",
+    "body_dark": "#FAFAFA",
+    "secondary_dark": "#A1A1AA"
+  },
+  "dividers": {
+    "subtle_light": "rgba(0, 0, 0, 0.06)",
+    "border_light": "#E4E4E7",
+    "subtle_dark": "rgba(255, 255, 255, 0.08)"
+  },
+  "muted_accents": {
+    "pale_red": { "bg": "#FDEBEC", "text": "#9F2F2D" },
+    "pale_blue": { "bg": "#E1F3FE", "text": "#1F6C9F" },
+    "pale_green": { "bg": "#EDF3EC", "text": "#346538" },
+    "pale_amber": { "bg": "#FBF3DB", "text": "#956400" },
+    "pale_purple": { "bg": "#F4EEF8", "text": "#6941C6" }
+  }
+}

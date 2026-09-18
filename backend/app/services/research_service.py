@@ -95,6 +95,5 @@ async def start_research(db: Session, research_run: ResearchRun, product: Produc
 def _get_base_url() -> str:
     """Determine the base URL for callback construction."""
     if settings.ENVIRONMENT == "production":
-        # In production, this should come from a proper config
         return "https://api.launchlens.com"
-    return "http://localhost:8000"
+    return settings.CALLBACK_BASE_URL

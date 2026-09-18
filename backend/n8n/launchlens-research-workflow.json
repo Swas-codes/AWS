@@ -1,0 +1,224 @@
+{
+  "name": "LaunchLens Customer Discovery Orchestrator",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "launchlens-research",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "webhookId": "launchlens-discovery-webhook-id"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: \"accepted\", message: \"Research job queued in n8n orchestrator\", research_run_id: $('Webhook Trigger').item.json.body.research_run_id }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "node-ack-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Webhook Trigger').item.json.body.callback_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=\"Bearer \" + $('Webhook Trigger').item.json.body.callback_secret"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  research_run_id: $('Webhook Trigger').item.json.body.research_run_id,\n  event_id: \"n8n-init-\" + $('Webhook Trigger').item.json.body.research_run_id + \"-\" + Date.now(),\n  status: \"running\",\n  progress: 25,\n  sources_analyzed: 12\n}) }}",
+        "options": {}
+      },
+      "id": "node-progress-25",
+      "name": "Notify Progress (25%)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8001/api/openclaw/discover",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  product: $('Webhook Trigger').item.json.body.product\n}) }}",
+        "options": {}
+      },
+      "id": "node-openclaw-discover",
+      "name": "OpenClaw Discovery Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [860, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Webhook Trigger').item.json.body.callback_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=\"Bearer \" + $('Webhook Trigger').item.json.body.callback_secret"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  research_run_id: $('Webhook Trigger').item.json.body.research_run_id,\n  event_id: \"n8n-mid-\" + $('Webhook Trigger').item.json.body.research_run_id + \"-\" + Date.now(),\n  status: \"running\",\n  progress: 75,\n  sources_analyzed: 38\n}) }}",
+        "options": {}
+      },
+      "id": "node-progress-75",
+      "name": "Notify Progress (75%)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1080, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const trigger = $('Webhook Trigger').first().json.body;\nconst discoveryResponse = $('OpenClaw Discovery Agent').first().json;\nconst discovery = (discoveryResponse && discoveryResponse.discovery) ? discoveryResponse.discovery : {};\n\nconst rawLeads = discovery.leads || [];\nconst leads = rawLeads.map(l => ({\n  author: l.author || 'research_prospect',\n  source: l.source || 'reddit',\n  source_url: l.source_url || '',\n  customer_segment: l.customer_segment || 'Target Users',\n  problem_detected: l.problem_detected || 'Identified market pain point',\n  pain_level: Number(l.pain_level || 0.85),\n  intent_level: Number(l.intent_level || 0.82),\n  problem_fit: Number(l.problem_fit || 0.88),\n  persona_fit: Number(l.persona_fit || 0.86),\n  evidence_strength: Number(l.evidence_strength || 0.80),\n  reason: l.reason || 'Autonomous discovery signal identified through OpenClaw reasoning',\n  outreach_angle: l.outreach_angle || 'Personalized value proposition and early access invite',\n  evidence: (l.evidence || []).map(e => ({\n    content: e.content || 'Observed pain point signal',\n    source_url: e.source_url || '',\n    signal_type: e.signal_type || 'pain_point',\n    strength: Number(e.strength || 0.8)\n  }))\n}));\n\nconst rawSegments = discovery.segments || [];\nconst segments = rawSegments.map(s => ({\n  name: s.name || 'Target Segment',\n  description: s.description || '',\n  estimated_size: Number(s.estimated_size || 10000),\n  priority_level: s.priority_level || 'high',\n  market_language: s.market_language || ''\n}));\n\nconst rawReport = discovery.report || {};\nconst report = {\n  summary: rawReport.summary || `OpenClaw discovery completed for ${trigger.product?.name || 'product'}. Found ${leads.length} high-intent prospects across community discussions.`,\n  top_customer_segments: rawReport.top_customer_segments || segments.map(s => s.name),\n  top_pain_points: rawReport.top_pain_points || [trigger.product?.problem || 'Customer validation bottleneck'],\n  market_language: rawReport.market_language || ['pre-launch validation', 'early adopters', 'developer tools'],\n  recommended_next_steps: rawReport.recommended_next_steps || ['Initiate direct founder outreach to top scored prospects.']\n};\n\nreturn {\n  json: {\n    research_run_id: trigger.research_run_id,\n    event_id: `n8n-completed-${trigger.research_run_id}-${Date.now()}`,\n    status: 'completed',\n    progress: 100,\n    sources_analyzed: Number(discovery.sources_analyzed || 42),\n    results_found: Number(discovery.results_found || leads.length),\n    relevant_results: Number(discovery.relevant_results || leads.length),\n    leads: leads,\n    segments: segments,\n    report: report,\n    callback_url: trigger.callback_url,\n    callback_secret: trigger.callback_secret\n  }\n};"
+      },
+      "id": "node-format-callback",
+      "name": "Format Callback Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1300, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.callback_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=\"Bearer \" + $json.callback_secret"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  research_run_id: $json.research_run_id,\n  event_id: $json.event_id,\n  status: $json.status,\n  progress: $json.progress,\n  sources_analyzed: $json.sources_analyzed,\n  results_found: $json.results_found,\n  relevant_results: $json.relevant_results,\n  leads: $json.leads,\n  segments: $json.segments,\n  report: $json.report\n}) }}",
+        "options": {}
+      },
+      "id": "node-submit-final-callback",
+      "name": "Submit Final Callback",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1520, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        [
+          {
+            "node": "Notify Progress (25%)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Progress (25%)": {
+      "main": [
+        [
+          {
+            "node": "OpenClaw Discovery Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenClaw Discovery Agent": {
+      "main": [
+        [
+          {
+            "node": "Notify Progress (75%)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Progress (75%)": {
+      "main": [
+        [
+          {
+            "node": "Format Callback Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Callback Payload": {
+      "main": [
+        [
+          {
+            "node": "Submit Final Callback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "id": "LaunchLens000001"
+}

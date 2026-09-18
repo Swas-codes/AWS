@@ -21,6 +21,13 @@ class Settings(BaseSettings):
     # ── n8n Integration ──────────────────────────────────────────────────
     N8N_WEBHOOK_URL: str = "http://localhost:5678/webhook/launchlens-research"
     N8N_CALLBACK_SECRET: str = "change-me-to-a-strong-secret"
+    CALLBACK_BASE_URL: str = "http://host.docker.internal:8001"
+
+    # ── OpenClaw Integration ─────────────────────────────────────────────
+    OPENCLAW_PATH: str = "/opt/homebrew/bin/openclaw"
+    OPENCLAW_ENABLED: bool = True
+    OPENCLAW_TIMEOUT_SECONDS: int = 180
+    RESEARCH_AGENT_PROVIDER: str = "openclaw"
 
     # ── CORS ─────────────────────────────────────────────────────────────
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
